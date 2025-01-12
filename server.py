@@ -7,7 +7,6 @@ import time
 
 app = Flask(__name__)
 
-# DigitalOcean App Platform requires a default route for health checks
 @app.route('/')
 def index():
     return "Worker is running", 200
@@ -53,39 +52,42 @@ except Exception as e:
     traceback.print_exc()
     raise
 
-# Event Listener Function
+# Event Listener Using eth_getLogs
 def listen_to_events():
     print("Starting event listener...")
-
-    try:
-        event_filter = contract.events.ColorChanged.create_filter(fromBlock="latest")
-        print("Event filter created successfully.")
-    except Exception as e:
-        print(f"Error creating event filter: {e}")
-        traceback.print_exc()
-        return
+    latest_block = web3.eth.block_number
 
     while True:
         try:
-            print("Checking for new events...")
-            events = event_filter.get_new_entries()
-            print(f"Found {len(events)} new events.")
-            for event in events:
+            print(f"Fetching logs from block {latest_block} to latest...")
+            logs = web3.eth.get_logs({
+                "fromBlock": hex(latest_block),
+                "toBlock": "latest",
+                "address": CONTRACT_ADDRESS,
+                "topics": [contract.events.ColorChanged().signature]
+            })
+
+            for log in logs:
                 try:
+                    event = contract.events.ColorChanged().process_log(log)
                     token_id = event.args.tokenId
                     r = event.args.r
                     g = event.args.g
                     b = event.args.b
+
                     print(f"ColorChanged Event - Token ID: {token_id}, RGB: ({r}, {g}, {b})")
 
                     # Example: Trigger webhook or database update
                     # send_webhook(token_id, r, g, b)
                 except Exception as e:
-                    print(f"Error processing event: {e}")
+                    print(f"Error processing log: {e}")
                     traceback.print_exc()
 
+            # Update the latest block to avoid processing logs again
+            latest_block = web3.eth.block_number + 1
+
         except Exception as e:
-            print(f"Error fetching events: {e}")
+            print(f"Error fetching logs: {e}")
             traceback.print_exc()
 
         time.sleep(2)  # Prevent tight polling
