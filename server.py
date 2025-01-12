@@ -38,7 +38,7 @@ contract = web3.eth.contract(address=Web3.to_checksum_address(CONTRACT_ADDRESS),
 def listen_to_events():
     # Event listener
     print("Listening for events...")
-    event_filter = contract.events.ColorChanged.create_filter(fromBlock="latest")
+    event_filter = contract.events.ColorChanged.create_filter(from_block="latest")
 
     while True:
         for event in event_filter.get_new_entries():
