@@ -2,5 +2,4 @@ Flask==2.3.2
 web3==6.9.0
 gunicorn==21.2.0
 requests==2.31.0
-os
 
