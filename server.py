@@ -33,7 +33,7 @@ CONTRACT_ABI = [
 
 # Connect to Monad Devnet
 web3 = Web3(Web3.HTTPProvider(RPC))
-contract = web3.eth.contract(address=Web3.toChecksumAddress(CONTRACT_ADDRESS), abi=CONTRACT_ABI)
+contract = web3.eth.contract(address=Web3.to_checksum_address(CONTRACT_ADDRESS), abi=CONTRACT_ABI)
 
 def listen_to_events():
     # Event listener
