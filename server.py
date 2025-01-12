@@ -4,9 +4,11 @@ from flask import Flask
 from web3 import Web3
 import threading
 import time
+from eth_utils import keccak
 
 app = Flask(__name__)
 
+# DigitalOcean App Platform requires a default route for health checks
 @app.route('/')
 def index():
     return "Worker is running", 200
@@ -15,7 +17,7 @@ def index():
 NETWORK_NAME = os.environ.get("networkName", "Unknown Network")
 CHAIN_ID = os.environ.get("chainID", "Unknown Chain ID")
 SYMBOL = os.environ.get("symbol", "Unknown Symbol")
-RPC = os.environ.get("rpc")
+RPC = os.environ.get("rpc", "http://127.0.0.1:8545")
 
 CONTRACT_ADDRESS = "0x64376a051E77b7D7181C3DfBb49c3c83e127704b"
 CONTRACT_ABI = [
@@ -52,20 +54,30 @@ except Exception as e:
     traceback.print_exc()
     raise
 
-# Event Listener Using eth_getLogs
 def listen_to_events():
     print("Starting event listener...")
     latest_block = web3.eth.block_number
+
+    # Calculate the event signature for ColorChanged
+    event_signature = "ColorChanged(uint256,uint8,uint8,uint8)"
+    event_topic = "0x" + keccak(text=event_signature).hex()
+
+    print(f"Using event topic for ColorChanged: {event_topic}")
 
     while True:
         try:
             print(f"Fetching logs from block {latest_block} to latest...")
             logs = web3.eth.get_logs({
-                "fromBlock": hex(latest_block),
+                "fromBlock": latest_block,
                 "toBlock": "latest",
                 "address": CONTRACT_ADDRESS,
-                "topics": [contract.events.ColorChanged().signature]
+                "topics": [event_topic]
             })
+
+            if logs:
+                print(f"Found {len(logs)} logs.")
+            else:
+                print("No new logs found.")
 
             for log in logs:
                 try:
